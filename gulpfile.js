@@ -6,6 +6,7 @@ const autoprefixer = require('gulp-autoprefixer');
 const concat = require('gulp-concat');
 const cleanCSS = require('gulp-clean-css');
 const terser = require('gulp-terser');
+const rename = require('gulp-rename');
 const del = require('del');
 
 function browsersync() {
@@ -29,12 +30,12 @@ function styles() {
   ])
     .pipe(sass({outputStyle: 'expanded'}))
     .on('error', sass.logError)
-    .pipe(concat('custom.min.css'))
+    .pipe(concat('custom.css'))
     .pipe(autoprefixer({
       overrideBrowserslist: ['last 10 version'],
       grid: true
     }))
-    .pipe(cleanCSS())
+    // .pipe(cleanCSS())
     .pipe(dest('app/css'))
     .pipe(browserSync.stream())
 }
@@ -51,14 +52,23 @@ function scripts() {
 }
 
 function watching() {
-  watch(['app/scss/**/*.scss'], styles);
+  watch(['app/sass/**/*.scss'], styles);
   watch(['app/js/**/*.js', '!app/js/custom.min.js'], scripts);
   watch(['app/*.html']).on('change', browserSync.reload);
 }
 
+function buildCSS() {
+  return src('app/css/custom.css')
+    .pipe(cleanCSS())
+    .pipe(rename(function(path) {
+      path.extname = '.min.css';
+    }))
+    .pipe(dest('dist/css'))
+}
+
 function build() {
   return src([
-    'app/css/custom.min.css',
+    // 'app/css/custom.min.css',
     // 'app/fonts/**/*',
     'app/js/custom.min.js',
     'app/img/**/*',
@@ -74,4 +84,4 @@ exports.scripts = scripts;
 exports.clean = cleanDist;
 
 exports.default = parallel(styles, scripts, browsersync, watching);
-exports.build = series(cleanDist, build);
+exports.build = series(cleanDist, buildCSS, build);
