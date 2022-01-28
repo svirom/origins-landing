@@ -6,7 +6,7 @@ const autoprefixer = require('gulp-autoprefixer');
 const concat = require('gulp-concat');
 const cleanCSS = require('gulp-clean-css');
 const terser = require('gulp-terser');
-const rename = require('gulp-rename');
+const merge = require('merge-stream');
 const del = require('del');
 
 function browsersync() {
@@ -24,7 +24,7 @@ function cleanDist() {
 }
 
 function styles() {
-  return src([
+  const css = src([
     'app/vendor/css/bootstrap-grid.css',
     'app/sass/**/*+(.sass|scss)'
   ])
@@ -35,9 +35,24 @@ function styles() {
       overrideBrowserslist: ['last 10 version'],
       grid: true
     }))
-    // .pipe(cleanCSS())
-    .pipe(dest('app/css'))
-    .pipe(browserSync.stream())
+    .pipe(dest('app/css'));
+
+  const minCSS = src([
+    'app/vendor/css/bootstrap-grid.css',
+    'app/sass/**/*+(.sass|scss)'
+  ])
+    .pipe(sass({outputStyle: 'compressed'}))
+    .on('error', sass.logError)
+    .pipe(concat('custom.min.css'))
+    .pipe(autoprefixer({
+      overrideBrowserslist: ['last 10 version'],
+      grid: true
+    }))
+    .pipe(cleanCSS())
+    .pipe(dest('app/css'));
+
+  return merge(css, minCSS)
+    .pipe(browserSync.stream());
 }
 
 function scripts() {
@@ -48,7 +63,7 @@ function scripts() {
     .pipe(concat('custom.min.js'))
     .pipe(terser())
     .pipe(dest('app/js'))
-    .pipe(browserSync.stream())
+    .pipe(browserSync.stream());
 }
 
 function watching() {
@@ -57,19 +72,12 @@ function watching() {
   watch(['app/*.html']).on('change', browserSync.reload);
 }
 
-function buildCSS() {
-  return src('app/css/custom.css')
-    .pipe(cleanCSS())
-    .pipe(rename(function(path) {
-      path.extname = '.min.css';
-    }))
-    .pipe(dest('dist/css'))
-}
-
 function build() {
   return src([
-    // 'app/css/custom.min.css',
+    'app/css/custom.css',
+    'app/css/custom.min.css',
     // 'app/fonts/**/*',
+    'app/js/custom.js',
     'app/js/custom.min.js',
     'app/img/**/*',
     'app/*.html'
@@ -84,4 +92,4 @@ exports.scripts = scripts;
 exports.clean = cleanDist;
 
 exports.default = parallel(styles, scripts, browsersync, watching);
-exports.build = series(cleanDist, buildCSS, build);
+exports.build = series(cleanDist, build);
