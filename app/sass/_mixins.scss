@@ -17,15 +17,3 @@
 	font-weight: $weight;
 	line-height: $lineHeight;
 };
-
-// transition
-@mixin transition($object, $time) {
-	-webkit-transition: $object $time ease;
-	transition: $object $time ease;
-};
-
-// transform
-@mixin transform($object) {
-	-webkit-transform: $object;
-	transform: $object;
-};
